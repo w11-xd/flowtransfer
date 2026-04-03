@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FlowTransfer · 智绘快传</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: #000000;
+            font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+            min-height: 100vh;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        .page {
+            display: none;
+            min-height: 100vh;
+            background: #000000;
+        }
+        .page.active {
+            display: block;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 12px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0 12px;
+            border-bottom: 0.5px solid rgba(255,255,255,0.1);
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+        .logo {
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #FFFFFF, #8B9DC3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .mail-btn {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .transfer-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 24px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 0.5px solid rgba(255,255,255,0.1);
+        }
+        .transfer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .transfer-header h3 {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .bluetooth-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(0,122,255,0.2);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.5; transform: scale(1); }
+        }
+        .bt-status-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 12px;
+            margin: 12px 0;
+        }
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .status-label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+        }
+        .status-value {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .status-value.connected {
+            color: #30d158;
+        }
+        .status-value.scanning {
+            color: #ff9f0a;
+        }
+        .status-value.error {
+            color: #ff453a;
+        }
+        .scan-btn, .batch-select-btn, .transfer-btn {
+            width: 100%;
+            background: rgba(0,122,255,0.2);
+            border: 1px solid rgba(0,122,255,0.5);
+            padding: 12px;
+            border-radius: 30px;
+            color: #0a84ff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .transfer-btn {
+            background: #0a84ff;
+            color: white;
+            border: none;
+        }
+        .file-list {
+            margin-top: 10px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        .file-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .file-preview {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .file-info {
+            flex: 1;
+        }
+        .file-name {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .file-size {
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
+        }
+        .file-status {
+            font-size: 10px;
+            color: #30d158;
+        }
+        .progress-section {
+            margin-top: 10px;
+        }
+        .progress-bar-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            height: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: #0a84ff;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+        }
+        .back-icon {
+            background: rgba(255,255,255,0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .editor-tools {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 0;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tool-chip {
+            background: rgba(255,255,255,0.08);
+            padding: 8px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tool-chip.active {
+            background: #0a84ff;
+            border-color: #0a84ff;
+        }
+        .tool-chip.undo {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid transparent;
+            color: white;
+        }
+        .image-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.1);
+            border-radius: 40px;
+            padding: 4px 10px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+        .switch-btn {
+            background: rgba(10,132,255,0.3);
+            border: 1px solid rgba(10,132,255,0.5);
+            width: 40px;
+            height: 40px;
+            border-radius: 40px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .switch-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .current-image-info {
+            font-size: 13px;
+            font-weight: 500;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 30px;
+        }
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 8px 0;
+            flex-shrink: 0;
+        }
+        .zoom-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 40px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .zoom-reset {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            cursor: pointer;
+            color: white;
+        }
+        .color-palette {
+            display: flex;
+            gap: 8px;
+            padding: 8px 0;
+            overflow-x: auto;
+            flex-shrink: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .color-dot {
+            width: 36px;
+            height: 36px;
+            border-radius: 30px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            flex-shrink: 0;
+        }
+        .color-dot.selected {
+            border-color: white;
+            transform: scale(1.05);
+        }
+        .canvas-area {
+            background: #1c1c1e;
+            border-radius: 16px;
+            padding: 10px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 350px;
+            max-height: 450px;
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        .canvas-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-origin: center center;
+            transition: transform 0.1s ease;
+            will-change: transform;
+        }
+        #imageCanvas {
+            border-radius: 12px;
+            display: none;
+            touch-action: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        .size-slider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 6px 0;
+            flex-shrink: 0;
+        }
+        .size-slider span {
+            font-size: 11px;
+            min-width: 35px;
+        }
+        .size-slider input {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+        .size-slider input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 16px;
+            background: #0a84ff;
+            cursor: pointer;
+        }
+        .crop-controls {
+            display: flex;
+            gap: 6px;
+            margin: 6px 0;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .ratio-btn {
+            background: rgba(255,255,255,0.08);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .ratio-btn.active {
+            background: #0a84ff;
+            color: white;
+        }
+        .toast-msg {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            z-index: 2000;
+            animation: fadeOut 2s forwards;
+            white-space: nowrap;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+        .placeholder-text {
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            padding: 30px;
+        }
+        .mode-indicator {
+            text-align: center;
+            font-size: 11px;
+            color: #0a84ff;
+            margin: 4px 0;
+            padding: 4px;
+            background: rgba(10,132,255,0.1);
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #1c1c1e;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 350px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .modal-content h4 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .share-image-list {
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .share-image-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+        .share-image-item.selected {
+            background: rgba(10,132,255,0.3);
+            border: 1px solid #0a84ff;
+        }
+        .share-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .share-image-item.selected .share-checkbox {
+            background: #0a84ff;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .modal-btn.confirm {
+            background: #0a84ff;
+            color: white;
+        }
+        .modal-btn.cancel {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .device-list {
+            margin-top: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .device-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 8px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .device-icon {
+            font-size: 18px;
+        }
+        .device-info {
+            flex: 1;
+        }
+        .device-name {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .device-signal {
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
+        }
+        .connect-btn {
+            background: #0a84ff;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: white;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .modal-btn.confirm:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .email-hint {
+            background: rgba(10,132,255,0.15);
+            border-radius: 12px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+        }
+        .preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .preview-tip {
+            background: rgba(255,255,255,0.2);
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .preview-buttons {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 300px;
+        }
+        .preview-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            text-align: center;
+        }
+        .preview-btn-primary {
+            background: #0A84FF;
+            color: white;
+        }
+        .preview-btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .preview-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .preview-close {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="pageReceive" class="page active">
+        <div class="container">
+            <div class="nav-header">
+                <div class="logo">FLOW TRANSFER</div>
+                <button class="mail-btn" id="topMailBtn">📧 发送</button>
+            </div>
+            <div class="transfer-card">
+                <div class="transfer-header">
+                    <h3>蓝牙传输</h3>
+                    <div class="bluetooth-icon" id="btIcon">🔷</div>
+                </div>
+                <div class="bt-status-card">
+                    <div class="status-row">
+                        <span class="status-label">蓝牙状态</span>
+                        <span class="status-value" id="btStatus">未连接</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">设备名称</span>
+                        <span class="status-value" id="deviceName">--</span>
+                    </div>
+                </div>
+                <button class="scan-btn" id="scanBtn">🔍 开始扫描蓝牙设备</button>
+                <div id="deviceList" style="display: none;">
+                    <div style="margin: 6px 0; font-size: 11px; color: rgba(255,255,255,0.6);">附近设备</div>
+                    <div id="devicesContainer"></div>
+                </div>
+                <button class="batch-select-btn" id="batchSelectBtn">📱 + 批量选择照片/视频</button>
+                <div class="file-list" id="fileList">
+                    <div class="placeholder-text" style="padding: 25px;">暂无文件<br>点击上方按钮选择</div>
+                </div>
+                <div class="progress-section" id="progressSection" style="display: none;">
+                    <div class="progress-bar-container">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span id="progressText">传输中...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                </div>
+                <button class="transfer-btn" id="startTransferBtn">⚡ 开始批量传输</button>
+            </div>
+            <div style="text-align: center; font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 8px;">
+                支持批量图片 · 高速蓝牙传输
+            </div>
+        </div>
+    </div>
+    <div id="pageEditor" class="page">
+        <div class="container">
+            <div class="nav-header">
+                <div class="back-icon" id="backToReceive">←</div>
+                <div class="logo">编辑工作台</div>
+                <button class="mail-btn" id="editorMailBtn">📧 发送</button>
+            </div>
+            <div class="image-switcher" id="imageSwitcher">
+                <button class="switch-btn" id="prevImageBtn">←</button>
+                <span class="current-image-info" id="currentImageInfo">第 0 / 0 张</span>
+                <button class="switch-btn" id="nextImageBtn">→</button>
+            </div>
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoomOutBtn">−</button>
+                <button class="zoom-reset" id="zoomResetBtn">重置</button>
+                <button class="zoom-btn" id="zoomInBtn">+</button>
+            </div>
+            <div class="editor-tools">
+                <div class="tool-chip" id="cropToolBtn">✂️ 裁剪</div>
+                <div class="tool-chip" id="drawToolBtn">✏️ 涂鸦</div>
+                <div class="tool-chip" id="eraserToolBtn">🧽 橡皮擦</div>
+                <div class="tool-chip" id="textToolBtn">📝 文字</div>
+                <div class="tool-chip undo" id="undoBtn">↩️ 撤回</div>
+                <div class="tool-chip" id="clearToolBtn">🗑️ 清空</div>
+            </div>
+            <div id="modeIndicator" class="mode-indicator" style="display: none;"></div>
+            <div class="color-palette" id="colorPalette">
+                <div class="color-dot" style="background: #FF3B30;"></div>
+                <div class="color-dot" style="background: #FF9500;"></div>
+                <div class="color-dot" style="background: #FFCC00;"></div>
+                <div class="color-dot" style="background: #34C759;"></div>
+                <div class="color-dot" style="background: #0A84FF;"></div>
+                <div class="color-dot" style="background: #BF5AF2;"></div>
+                <div class="color-dot" style="background: #FFFFFF;"></div>
+                <div class="color-dot" style="background: #000000;"></div>
+            </div>
+            <div class="size-slider" id="sizeSlider" style="display: none;">
+                <span>✏️ 大小</span>
+                <input type="range" id="brushSize" min="2" max="40" value="4">
+                <span id="sizeValue">4px</span>
+            </div>
+            <div class="size-slider" id="textSizeSlider" style="display: none;">
+                <span>📝 字号</span>
+                <input type="range" id="fontSize" min="16" max="150" value="48">
+                <span id="fontSizeValue">48px</span>
+            </div>
+            <div class="crop-controls" id="cropControls" style="display: none;">
+                <div class="ratio-btn" data-ratio="free">自由</div>
+                <div class="ratio-btn" data-ratio="1:1">1:1</div>
+                <div class="ratio-btn" data-ratio="4:3">4:3</div>
+                <div class="ratio-btn" data-ratio="16:9">16:9</div>
+                <div class="ratio-btn" id="cancelCropBtn" style="background: rgba(255,255,255,0.2);">✗ 取消</div>
+            </div>
+            <div class="canvas-area" id="canvasArea">
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="imageCanvas"></canvas>
+                </div>
+                <div id="imgPlaceholder" class="placeholder-text">📸 暂无图片<br>请先传输图片</div>
+            </div>
+            <div style="font-size: 10px; color: rgba(255,255,255,0.4); text-align: center; margin-top: 6px;">
+                💡 双指缩放图片 | 单指拖动图片（放大后）| 文字周围都可拖拽移动 | 双击删除文字 | 所有操作可撤回
+            </div>
+        </div>
+    </div>
+    <div id="shareModal" class="modal">
+        <div class="modal-content">
+            <h4>选择要分享的图片</h4>
+            <div class="email-hint">
+                📸 操作流程：<br>
+                1️⃣ 选择图片，点击下方按钮<br>
+                2️⃣ 长按图片 → 选择"保存图片"<br>
+                3️⃣ 图片自动存入相册<br>
+                4️⃣ 打开邮箱App → 写邮件<br>
+                5️⃣ 添加附件 → 从相册选择图片<br>
+                6️⃣ 发送！
+            </div>
+            <div id="shareImageList" class="share-image-list"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="cancelShareBtn">取消</button>
+                <button class="modal-btn confirm" id="confirmShareBtn">📸 预览并保存图片</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function() {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+            
+            function init() {
+                let images = [];
+                let currentImgIndex = 0;
+                let originalImageData = null;
+                let currentImageData = null;
+                let texts = [];
+                let originalImageDataBuffer = null;
+                let originalWidth = 0, originalHeight = 0;
+                let historyStack = [];
+                let historyIndex = -1;
+                let isUndoing = false;
+                let currentMode = null;
+                let drawColor = '#FF3B30';
+                let drawSize = 4;
+                let textSize = 48;
+                let isDrawing = false;
+                let lastX = 0, lastY = 0;
+                let saveTimer = null;
+                let cropStart = { x: 0, y: 0 };
+                let cropEnd = { x: 0, y: 0 };
+                let isCropping = false;
+                let cropRatio = 'free';
+                let draggingTextIndex = -1;
+                let dragStartX = 0, dragStartY = 0;
+                let isDraggingText = false;
+                let textDragActive = false;
+                let currentScale = 1;
+                let minScale = 0.5;
+                let maxScale = 4;
+                let translateX = 0, translateY = 0;
+                let initialDistance = 0;
+                let initialScale = 1;
+                let isPinching = false;
+                let isPanning = false;
+                let panStartX = 0, panStartY = 0;
+                let panStartTranslateX = 0, panStartTranslateY = 0;
+                let canvasContainerWidth = 0;
+                let canvasContainerHeight = 0;
+                let imgPixelWidth = 0, imgPixelHeight = 0;
+                let isBluetoothConnected = false;
+                let connectedDeviceName = '';
+                let foundDevices = [];
+                let isScanning = false;
+                let selectedFiles = [];
+                
+                // 预览相关变量
+                let previewImagesData = [];
+                let currentPreviewIndex = 0;
+                let pendingEmail = null;
+                
+                const pageReceive = document.getElementById('pageReceive');
+                const pageEditor = document.getElementById('pageEditor');
+                const btStatusSpan = document.getElementById('btStatus');
+                const deviceNameSpan = document.getElementById('deviceName');
+                const scanBtn = document.getElementById('scanBtn');
+                const deviceListDiv = document.getElementById('deviceList');
+                const devicesContainer = document.getElementById('devicesContainer');
+                const btIcon = document.getElementById('btIcon');
+                const fileListDiv = document.getElementById('fileList');
+                const progressSection = document.getElementById('progressSection');
+                const progressFill = document.getElementById('progressFill');
+                const progressText = document.getElementById('progressText');
+                const progressPercent = document.getElementById('progressPercent');
+                const canvas = document.getElementById('imageCanvas');
+                const placeholder = document.getElementById('imgPlaceholder');
+                const modeIndicator = document.getElementById('modeIndicator');
+                const imageSwitcher = document.getElementById('imageSwitcher');
+                const currentImageInfo = document.getElementById('currentImageInfo');
+                const prevImageBtn = document.getElementById('prevImageBtn');
+                const nextImageBtn = document.getElementById('nextImageBtn');
+                const shareModal = document.getElementById('shareModal');
+                const shareImageList = document.getElementById('shareImageList');
+                const cropControls = document.getElementById('cropControls');
+                const canvasWrapper = document.getElementById('canvasWrapper');
+                const canvasArea = document.getElementById('canvasArea');
+                const zoomOutBtn = document.getElementById('zoomOutBtn');
+                const zoomInBtn = document.getElementById('zoomInBtn');
+                const zoomResetBtn = document.getElementById('zoomResetBtn');
+                
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                
+                function updateContainerSize() {
+                    if (canvasArea) {
+                        canvasContainerWidth = canvasArea.clientWidth - 20;
+                        canvasContainerHeight = canvasArea.clientHeight - 20;
+                    }
+                }
+                
+                function updateTransform() {
+                    if (canvasWrapper) {
+                        canvasWrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+                    }
+                }
+                
+                function zoomIn() {
+                    let newScale = currentScale + 0.2;
+                    if (newScale > maxScale) newScale = maxScale;
+                    currentScale = newScale;
+                    updateTransform();
+                    showToast(`放大到 ${Math.round(currentScale * 100)}%`);
+                }
+                
+                function zoomOut() {
+                    let newScale = currentScale - 0.2;
+                    if (newScale < minScale) newScale = minScale;
+                    currentScale = newScale;
+                    updateTransform();
+                    showToast(`缩小到 ${Math.round(currentScale * 100)}%`);
+                }
+                
+                function resetZoom() {
+                    currentScale = 1;
+                    translateX = 0;
+                    translateY = 0;
+                    updateTransform();
+                    showToast('重置缩放');
+                }
+                
+                function getTouchDistance(e) {
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    return Math.hypot(dx, dy);
+                }
+                
+                function onPinchStart(e) {
+                    if (e.touches.length === 2) {
+                        isPinching = true;
+                        initialDistance = getTouchDistance(e);
+                        initialScale = currentScale;
+                        e.preventDefault();
+                    }
+                }
+                
+                function onPinchMove(e) {
+                    if (isPinching && e.touches.length === 2) {
+                        const newDistance = getTouchDistance(e);
+                        const scaleChange = newDistance / initialDistance;
+                        let newScale = initialScale * scaleChange;
+                        newScale = Math.min(maxScale, Math.max(minScale, newScale));
+                        currentScale = newScale;
+                        updateTransform();
+                        e.preventDefault();
+                    }
+                }
+                
+                function onPinchEnd(e) {
+                    isPinching = false;
+                }
+                
+                canvas.addEventListener('touchstart', onPinchStart);
+                canvas.addEventListener('touchmove', onPinchMove);
+                canvas.addEventListener('touchend', onPinchEnd);
+                
+                zoomOutBtn.onclick = zoomOut;
+                zoomInBtn.onclick = zoomIn;
+                zoomResetBtn.onclick = resetZoom;
+                
+                function getCanvasCoords(e) {
+                    const rect = canvas.getBoundingClientRect();
+                    let clientX, clientY;
+                    if (e.touches) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+                    const relativeX = (clientX - rect.left) / rect.width;
+                    const relativeY = (clientY - rect.top) / rect.height;
+                    let canvasX = relativeX * canvas.width;
+                    let canvasY = relativeY * canvas.height;
+                    canvasX = Math.min(Math.max(0, canvasX), canvas.width);
+                    canvasY = Math.min(Math.max(0, canvasY), canvas.height);
+                    return { x: canvasX, y: canvasY };
+                }
+                
+                function scheduleSave() {
+                    if (saveTimer) clearTimeout(saveTimer);
+                    saveTimer = setTimeout(() => {
+                        currentImageData = canvas.toDataURL();
+                        saveTimer = null;
+                    }, 100);
+                }
+                
+                function saveNow() {
+                    if (saveTimer) {
+                        clearTimeout(saveTimer);
+                        saveTimer = null;
+                    }
+                    currentImageData = canvas.toDataURL();
+                }
+                
+                function preloadOriginalImageData(imgUrl) {
+                    const img = new Image();
+                    img.onload = () => {
+                        originalWidth = img.width;
+                        originalHeight = img.height;
+                        const offCanvas = document.createElement('canvas');
+                        offCanvas.width = img.width;
+                        offCanvas.height = img.height;
+                        const offCtx = offCanvas.getContext('2d');
+                        offCtx.drawImage(img, 0, 0);
+                        originalImageDataBuffer = offCtx.getImageData(0, 0, img.width, img.height);
+                    };
+                    img.src = imgUrl;
+                }
+                
+                function redrawTextOnly() {
+                    if (!currentImageData) return;
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        texts.forEach(t => {
+                            ctx.font = `bold ${t.size}px system-ui`;
+                            ctx.fillStyle = t.color;
+                            ctx.shadowBlur = 2;
+                            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                            ctx.fillText(t.text, t.x, t.y);
+                        });
+                        ctx.shadowBlur = 0;
+                    };
+                    img.src = currentImageData;
+                }
+                
+                function redraw() {
+                    if (!currentImageData) return;
+                    const img = new Image();
+                    img.onload = () => {
+                        updateContainerSize();
+                        imgPixelWidth = img.width;
+                        imgPixelHeight = img.height;
+                        canvas.width = imgPixelWidth;
+                        canvas.height = imgPixelHeight;
+                        let displayWidth = imgPixelWidth;
+                        let displayHeight = imgPixelHeight;
+                        if (displayWidth > canvasContainerWidth && canvasContainerWidth > 0) {
+                            const ratio = canvasContainerWidth / displayWidth;
+                            displayWidth = canvasContainerWidth;
+                            displayHeight = imgPixelHeight * ratio;
+                        }
+                        if (displayHeight > canvasContainerHeight && canvasContainerHeight > 0) {
+                            const ratio = canvasContainerHeight / displayHeight;
+                            displayHeight = canvasContainerHeight;
+                            displayWidth = imgPixelWidth * ratio;
+                        }
+                        canvas.style.width = displayWidth + 'px';
+                        canvas.style.height = displayHeight + 'px';
+                        canvas.style.maxWidth = '100%';
+                        canvas.style.maxHeight = '100%';
+                        canvas.style.display = 'block';
+                        placeholder.style.display = 'none';
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        texts.forEach(t => {
+                            ctx.font = `bold ${t.size}px system-ui`;
+                            ctx.fillStyle = t.color;
+                            ctx.shadowBlur = 2;
+                            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                            ctx.fillText(t.text, t.x, t.y);
+                        });
+                        ctx.shadowBlur = 0;
+                        currentScale = 1;
+                        translateX = 0;
+                        translateY = 0;
+                        updateTransform();
+                        showToast(`图片已加载 (${imgPixelWidth} x ${imgPixelHeight})`);
+                    };
+                    img.src = currentImageData;
+                }
+                
+                function saveToHistory() {
+                    if (isUndoing) return;
+                    const state = {
+                        imageData: currentImageData,
+                        texts: JSON.parse(JSON.stringify(texts))
+                    };
+                    if (historyIndex < historyStack.length - 1) {
+                        historyStack = historyStack.slice(0, historyIndex + 1);
+                    }
+                    historyStack.push(state);
+                    historyIndex = historyStack.length - 1;
+                    if (historyStack.length > 50) {
+                        historyStack.shift();
+                        historyIndex--;
+                    }
+                }
+                
+                function undo() {
+                    if (historyIndex <= 0) {
+                        showToast('没有可撤回的操作了');
+                        return;
+                    }
+                    isUndoing = true;
+                    historyIndex--;
+                    const previousState = historyStack[historyIndex];
+                    if (previousState) {
+                        currentImageData = previousState.imageData;
+                        texts = JSON.parse(JSON.stringify(previousState.texts));
+                        redraw();
+                        showToast('已撤回上一步');
+                    }
+                    setTimeout(() => { isUndoing = false; }, 100);
+                }
+                
+                function recordInitialState() {
+                    historyStack = [];
+                    historyIndex = -1;
+                    if (currentImageData) {
+                        saveToHistory();
+                    }
+                }
+                
+                function eraserAt(x, y, size) {
+                    if (!originalImageDataBuffer) {
+                        if (originalImageData) {
+                            preloadOriginalImageData(originalImageData);
+                        }
+                        return;
+                    }
+                    const radius = size / 2;
+                    const startX = Math.max(0, Math.floor(x - radius));
+                    const startY = Math.max(0, Math.floor(y - radius));
+                    const endX = Math.min(canvas.width, Math.ceil(x + radius));
+                    const endY = Math.min(canvas.height, Math.ceil(y + radius));
+                    const w = endX - startX;
+                    const h = endY - startY;
+                    if (w <= 0 || h <= 0) return;
+                    const currentPixels = ctx.getImageData(startX, startY, w, h);
+                    for (let dy = 0; dy < h; dy++) {
+                        for (let dx = 0; dx < w; dx++) {
+                            const px = startX + dx;
+                            const py = startY + dy;
+                            const dist = Math.hypot(px - x, py - y);
+                            if (dist <= radius) {
+                                const srcIdx = (py * originalWidth + px) * 4;
+                                const dstIdx = (dy * w + dx) * 4;
+                                if (srcIdx >= 0 && srcIdx < originalImageDataBuffer.data.length) {
+                                    currentPixels.data[dstIdx] = originalImageDataBuffer.data[srcIdx];
+                                    currentPixels.data[dstIdx + 1] = originalImageDataBuffer.data[srcIdx + 1];
+                                    currentPixels.data[dstIdx + 2] = originalImageDataBuffer.data[srcIdx + 2];
+                                    currentPixels.data[dstIdx + 3] = originalImageDataBuffer.data[srcIdx + 3];
+                                }
+                            }
+                        }
+                    }
+                    ctx.putImageData(currentPixels, startX, startY);
+                    scheduleSave();
+                    for (let i = texts.length - 1; i >= 0; i--) {
+                        const t = texts[i];
+                        const textWidth = t.text.length * t.size * 0.55;
+                        const textHeight = t.size;
+                        const textLeft = t.x - textWidth/2;
+                        const textRight = t.x + textWidth/2;
+                        const textTop = t.y - textHeight;
+                        const textBottom = t.y;
+                        const eraserLeft = x - radius;
+                        const eraserRight = x + radius;
+                        const eraserTop = y - radius;
+                        const eraserBottom = y + radius;
+                        if (textRight > eraserLeft && textLeft < eraserRight && 
+                            textBottom > eraserTop && textTop < eraserBottom) {
+                            texts.splice(i, 1);
+                        }
+                    }
+                    texts.forEach(t => {
+                        ctx.font = `bold ${t.size}px system-ui`;
+                        ctx.fillStyle = t.color;
+                        ctx.fillText(t.text, t.x, t.y);
+                    });
+                }
+                
+                function drawLine(fromX, fromY, toX, toY) {
+                    ctx.beginPath();
+                    ctx.moveTo(fromX, fromY);
+                    ctx.lineTo(toX, toY);
+                    ctx.strokeStyle = drawColor;
+                    ctx.lineWidth = drawSize;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+                    scheduleSave();
+                }
+                
+                function updateImageSwitcher() {
+                    if (images.length <= 1) {
+                        prevImageBtn.classList.add('disabled');
+                        nextImageBtn.classList.add('disabled');
+                    } else {
+                        prevImageBtn.classList.remove('disabled');
+                        nextImageBtn.classList.remove('disabled');
+                    }
+                    currentImageInfo.innerText = `${currentImgIndex + 1} / ${images.length}`;
+                    imageSwitcher.style.display = images.length > 0 ? 'flex' : 'none';
+                }
+                
+                function saveCurrentToCollection() {
+                    if (images[currentImgIndex]) {
+                        saveNow();
+                        images[currentImgIndex] = {
+                            original: originalImageData,
+                            current: currentImageData,
+                            texts: JSON.parse(JSON.stringify(texts))
+                        };
+                    }
+                }
+                
+                function loadImage(index) {
+                    if (!images[index]) return;
+                    saveCurrentToCollection();
+                    const imgData = images[index];
+                    originalImageData = imgData.original;
+                    currentImageData = imgData.current;
+                    texts = JSON.parse(JSON.stringify(imgData.texts || []));
+                    preloadOriginalImageData(originalImageData);
+                    redraw();
+                    currentImgIndex = index;
+                    updateImageSwitcher();
+                    showToast(`切换到第 ${index + 1} 张`);
+                }
+                
+                function addImage(imgUrl, fileName) {
+                    const img = new Image();
+                    img.onload = () => {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = img.width;
+                        tempCanvas.height = img.height;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(img, 0, 0);
+                        const imgData = tempCanvas.toDataURL();
+                        images.push({
+                            original: imgUrl,
+                            current: imgData,
+                            texts: []
+                        });
+                        showToast(`已添加: ${fileName}`);
+                        if (images.length === 1) {
+                            originalImageData = imgUrl;
+                            currentImageData = imgData;
+                            texts = [];
+                            preloadOriginalImageData(originalImageData);
+                            redraw();
+                            recordInitialState();
+                            showPage(pageEditor);
+                        }
+                        updateImageSwitcher();
+                    };
+                    img.src = imgUrl;
+                }
+                
+                function applyCrop() {
+                    if (cropStart.x === cropEnd.x || cropStart.y === cropEnd.y) return;
+                    let left = Math.min(cropStart.x, cropEnd.x);
+                    let top = Math.min(cropStart.y, cropEnd.y);
+                    let right = Math.max(cropStart.x, cropEnd.x);
+                    let bottom = Math.max(cropStart.y, cropEnd.y);
+                    if (cropRatio !== 'free') {
+                        let ratio = cropRatio === '1:1' ? 1 : (cropRatio === '4:3' ? 4/3 : 16/9);
+                        const width = right - left;
+                        const height = bottom - top;
+                        if (width > height * ratio) {
+                            const newHeight = width / ratio;
+                            bottom = top + newHeight;
+                        } else {
+                            const newWidth = height * ratio;
+                            right = left + newWidth;
+                        }
+                    }
+                    const width = right - left;
+                    const height = bottom - top;
+                    if (width < 10 || height < 10) return;
+                    saveToHistory();
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = width;
+                    tempCanvas.height = height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    const img = new Image();
+                    img.onload = () => {
+                        tempCtx.drawImage(img, left, top, width, height, 0, 0, width, height);
+                        const croppedDataUrl = tempCanvas.toDataURL();
+                        originalImageData = croppedDataUrl;
+                        currentImageData = croppedDataUrl;
+                        preloadOriginalImageData(originalImageData);
+                        texts.forEach(t => {
+                            t.x -= left;
+                            t.y -= top;
+                        });
+                        redraw();
+                        setMode(null);
+                        showToast('裁剪完成');
+                    };
+                    img.src = currentImageData;
+                }
+                
+                function showToast(msg, isSuccess = false) {
+                    let toast = document.createElement('div');
+                    toast.className = 'toast-msg';
+                    if (isSuccess) toast.style.background = '#30d158';
+                    toast.innerText = msg;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2500);
+                }
+                
+                function showPage(page) {
+                    pageReceive.classList.remove('active');
+                    pageEditor.classList.remove('active');
+                    page.classList.add('active');
+                }
+                
+                function isPointOnText(x, y) {
+                    for (let i = texts.length - 1; i >= 0; i--) {
+                        const t = texts[i];
+                        const textWidth = t.text.length * t.size * 0.6;
+                        const textHeight = t.size;
+                        const hitArea = Math.min(Math.max(t.size * 0.8, 20), 60);
+                        const hitWidth = textWidth + hitArea;
+                        const hitHeight = textHeight + hitArea;
+                        if (x >= t.x - hitWidth/2 && x <= t.x + hitWidth/2 &&
+                            y >= t.y - hitHeight && y <= t.y + hitArea/2) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                }
+                
+                function setMode(mode) {
+                    if (currentMode === 'crop' && mode !== 'crop') {
+                        cropStart = { x: 0, y: 0 };
+                        cropEnd = { x: 0, y: 0 };
+                        isCropping = false;
+                        redraw();
+                    }
+                    currentMode = mode;
+                    document.querySelectorAll('.tool-chip').forEach(btn => btn.classList.remove('active'));
+                    if (mode === 'draw') document.getElementById('drawToolBtn').classList.add('active');
+                    if (mode === 'eraser') document.getElementById('eraserToolBtn').classList.add('active');
+                    if (mode === 'crop') document.getElementById('cropToolBtn').classList.add('active');
+                    if (mode === 'text') document.getElementById('textToolBtn').classList.add('active');
+                    const sizeSlider = document.getElementById('sizeSlider');
+                    const textSizeSlider = document.getElementById('textSizeSlider');
+                    sizeSlider.style.display = (mode === 'draw' || mode === 'eraser') ? 'flex' : 'none';
+                    textSizeSlider.style.display = mode === 'text' ? 'flex' : 'none';
+                    cropControls.style.display = mode === 'crop' ? 'flex' : 'none';
+                    if (mode === 'draw' || mode === 'eraser' || mode === 'crop') {
+                        canvas.style.cursor = 'crosshair';
+                    } else {
+                        canvas.style.cursor = 'grab';
+                    }
+                    if (modeIndicator) {
+                        if (mode === 'draw') modeIndicator.innerHTML = '✏️ 涂鸦模式';
+                        else if (mode === 'eraser') modeIndicator.innerHTML = '🧽 橡皮擦模式';
+                        else if (mode === 'crop') modeIndicator.innerHTML = '✂️ 裁剪模式';
+                        else if (mode === 'text') modeIndicator.innerHTML = '📝 文字模式';
+                        modeIndicator.style.display = mode ? 'block' : 'none';
+                    }
+                }
+                
+                async function scanRealBluetoothDevices() {
+                    if (!navigator.bluetooth) {
+                        showToast('当前浏览器不支持Web Bluetooth API');
+                        return false;
+                    }
+                    try {
+                        btStatusSpan.innerHTML = '扫描中...';
+                        btStatusSpan.className = 'status-value scanning';
+                        showToast('正在扫描蓝牙设备...');
+                        const device = await navigator.bluetooth.requestDevice({
+                            acceptAllDevices: true,
+                            optionalServices: ['battery_service']
+                        });
+                        connectedDeviceName = device.name || '未知设备';
+                        isBluetoothConnected = true;
+                        updateBluetoothUI();
+                        deviceListDiv.style.display = 'none';
+                        showToast(`已连接到 ${connectedDeviceName}`);
+                        return true;
+                    } catch (error) {
+                        showToast('蓝牙连接失败或用户取消');
+                        btStatusSpan.innerHTML = '未连接';
+                        btStatusSpan.className = 'status-value error';
+                        return false;
+                    }
+                }
+                
+                function updateBluetoothUI() {
+                    if (isBluetoothConnected) {
+                        btStatusSpan.innerHTML = '已连接';
+                        btStatusSpan.className = 'status-value connected';
+                        deviceNameSpan.innerHTML = connectedDeviceName || '已配对设备';
+                        btIcon.style.animation = 'none';
+                        btIcon.style.opacity = '1';
+                    } else {
+                        btStatusSpan.innerHTML = '未连接';
+                        btStatusSpan.className = 'status-value error';
+                        deviceNameSpan.innerHTML = '--';
+                        btIcon.style.animation = 'pulse 2s infinite';
+                    }
+                }
+                
+                function scanMockDevices() {
+                    const mockDevices = [
+                        { name: 'iPhone 15 Pro', id: '1', signal: '强' },
+                        { name: 'MacBook Pro', id: '2', signal: '中' },
+                        { name: 'AirPods Pro', id: '3', signal: '强' },
+                        { name: 'Xiaomi 13', id: '4', signal: '弱' },
+                        { name: 'Samsung S23', id: '5', signal: '中' }
+                    ];
+                    foundDevices = mockDevices;
+                    displayDevices(foundDevices);
+                    deviceListDiv.style.display = 'block';
+                    btStatusSpan.innerHTML = '扫描完成';
+                    btStatusSpan.className = 'status-value';
+                    isScanning = false;
+                    showToast(`发现 ${foundDevices.length} 个设备`);
+                }
+                
+                function displayDevices(devices) {
+                    if (!devicesContainer) return;
+                    devicesContainer.innerHTML = devices.map(device => `
+                        <div class="device-item" data-device-id="${device.id}">
+                            <div class="device-icon">📱</div>
+                            <div class="device-info">
+                                <div class="device-name">${device.name}</div>
+                                <div class="device-signal">信号: ${device.signal}</div>
+                            </div>
+                            <button class="connect-btn" data-device='${JSON.stringify(device)}'>连接</button>
+                        </div>
+                    `).join('');
+                    document.querySelectorAll('.connect-btn').forEach(btn => {
+                        btn.onclick = (e) => {
+                            e.stopPropagation();
+                            const device = JSON.parse(btn.dataset.device);
+                            connectToMockDevice(device);
+                        };
+                    });
+                }
+                
+                function connectToMockDevice(device) {
+                    showToast(`正在连接 ${device.name}...`);
+                    btStatusSpan.innerHTML = '连接中...';
+                    btStatusSpan.className = 'status-value scanning';
+                    setTimeout(() => {
+                        isBluetoothConnected = true;
+                        connectedDeviceName = device.name;
+                        updateBluetoothUI();
+                        deviceListDiv.style.display = 'none';
+                        showToast(`已成功连接到 ${device.name}`);
+                    }, 1500);
+                }
+                
+                if (scanBtn) {
+                    scanBtn.onclick = async () => {
+                        if (navigator.bluetooth) {
+                            const success = await scanRealBluetoothDevices();
+                            if (!success) {
+                                scanMockDevices();
+                            }
+                        } else {
+                            showToast('当前浏览器不支持Web Bluetooth，使用模拟模式');
+                            scanMockDevices();
+                        }
+                    };
+                }
+                
+                function formatFileSize(bytes) {
+                    if (bytes < 1024) return bytes + ' B';
+                    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                }
+                
+                function updateFileList() {
+                    if (!fileListDiv) return;
+                    if (selectedFiles.length === 0) {
+                        fileListDiv.innerHTML = '<div class="placeholder-text" style="padding: 25px;">暂无文件<br>点击上方按钮选择</div>';
+                        return;
+                    }
+                    fileListDiv.innerHTML = selectedFiles.map((file, index) => `
+                        <div class="file-item" data-index="${index}">
+                            <div class="file-preview">${file.type.startsWith('image/') ? '🖼️' : '🎬'}</div>
+                            <div class="file-info">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${formatFileSize(file.size)}</div>
+                            </div>
+                            <div class="file-status" id="status-${index}">⏳ 待传输</div>
+                        </div>
+                    `).join('');
+                }
+                
+                const batchSelectBtn = document.getElementById('batchSelectBtn');
+                if (batchSelectBtn) {
+                    batchSelectBtn.onclick = () => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.multiple = true;
+                        input.accept = 'image/*,video/*';
+                        input.onchange = (e) => {
+                            const files = Array.from(e.target.files);
+                            selectedFiles.push(...files);
+                            updateFileList();
+                            showToast(`已添加 ${files.length} 个文件`);
+                        };
+                        input.click();
+                    };
+                }
+                
+                const startTransferBtn = document.getElementById('startTransferBtn');
+                if (startTransferBtn) {
+                    startTransferBtn.onclick = async () => {
+                        if (!isBluetoothConnected) {
+                            showToast('请先连接蓝牙设备');
+                            return;
+                        }
+                        if (selectedFiles.length === 0) {
+                            showToast('请先选择文件');
+                            return;
+                        }
+                        if (progressSection) progressSection.style.display = 'block';
+                        let completed = 0;
+                        const total = selectedFiles.length;
+                        for (let i = 0; i < total; i++) {
+                            const statusDiv = document.getElementById(`status-${i}`);
+                            if (statusDiv) statusDiv.innerHTML = '📡 传输中...';
+                            await new Promise(resolve => {
+                                let progress = 0;
+                                const interval = setInterval(() => {
+                                    progress += 10;
+                                    const percent = ((completed + progress / 100) / total) * 100;
+                                    if (progressFill) progressFill.style.width = `${percent}%`;
+                                    if (progressPercent) progressPercent.innerText = `${Math.floor(percent)}%`;
+                                    if (progressText) progressText.innerText = `传输中 ${completed + 1}/${total}`;
+                                    if (progress >= 100) {
+                                        clearInterval(interval);
+                                        resolve();
+                                    }
+                                }, 30);
+                            });
+                            if (statusDiv) statusDiv.innerHTML = '✅ 已完成';
+                            const file = selectedFiles[i];
+                            if (file.type.startsWith('image/')) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                    addImage(ev.target.result, file.name);
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                            completed++;
+                        }
+                        if (progressFill) progressFill.style.width = '100%';
+                        if (progressPercent) progressPercent.innerText = '100%';
+                        if (progressText) progressText.innerText = `传输完成 ${total}/${total}`;
+                        if (images.length > 0) {
+                            showPage(pageEditor);
+                        }
+                        showToast(`批量传输完成！共 ${total} 个文件`);
+                    };
+                }
+                
+                // ==================== 修正后的分享和预览函数 ====================
+                
+                async function shareImages(selectedIndices) {
+                    if (selectedIndices.length === 0) {
+                        showToast('请至少选择一张图片');
+                        return;
+                    }
+
+                    const email = prompt('📧 请输入收件人邮箱地址：', '');
+                    if (!email || email.trim() === '') {
+                        showToast('请输入有效的邮箱地址');
+                        return;
+                    }
+                    pendingEmail = email.trim();
+
+                    // 重要：固化要分享的图片数据
+                    const imagesToShare = [];
+                    for (let idx of selectedIndices) {
+                        // 如果当前正在编辑的图片在选中的列表中，先保存其最新状态
+                        if (idx === currentImgIndex) {
+                            saveNow(); // 将 canvas 最新状态保存到 currentImageData
+                            images[idx].current = currentImageData;
+                            images[idx].texts = JSON.parse(JSON.stringify(texts));
+                        }
+                        // 确保图片数据存在
+                        if (images[idx] && images[idx].current) {
+                            imagesToShare.push({
+                                id: idx,
+                                dataUrl: images[idx].current,
+                                name: `智绘快传_图片${idx + 1}`
+                            });
+                        } else {
+                            console.error(`图片 ${idx} 数据无效`);
+                        }
+                    }
+
+                    if (imagesToShare.length === 0) {
+                        showToast('没有有效的图片数据');
+                        return;
+                    }
+
+                    // 关闭选择弹窗
+                    shareModal.classList.remove('active');
+                    // 显示预览，传递固化的数据
+                    showSavePreview(imagesToShare);
+                }
+                
+                function showSavePreview(imagesToShare) {
+                    previewImagesData = imagesToShare;
+                    currentPreviewIndex = 0;
+                    showPreviewModal();
+                }
+                
+                function showPreviewModal() {
+                    // 移除已存在的模态框
+                    const existingModal = document.querySelector('.preview-modal');
+                    if (existingModal) existingModal.remove();
+                    
+                    const modal = document.createElement('div');
+                    modal.className = 'preview-modal';
+                    const currentData = previewImagesData[currentPreviewIndex];
+                    
+                    modal.innerHTML = `
+                        <div class="preview-close">✕</div>
+                        <div class="preview-counter">${currentPreviewIndex + 1} / ${previewImagesData.length}</div>
+                        <img class="preview-image" src="${currentData.dataUrl}" alt="预览" style="user-select: none;">
+                        <div class="preview-tip">
+                            👆 长按图片 → 选择"保存图片"<br>
+                            图片将自动存入相册
+                        </div>
+                        <div class="preview-buttons">
+                            <button class="preview-btn preview-btn-secondary" id="previewPrevBtn" ${currentPreviewIndex === 0 ? 'disabled style="opacity:0.5"' : ''}>◀ 上一张</button>
+                            <button class="preview-btn preview-btn-primary" id="previewSaveBtn">💾 长按保存</button>
+                            <button class="preview-btn preview-btn-secondary" id="previewNextBtn" ${currentPreviewIndex === previewImagesData.length - 1 ? 'disabled style="opacity:0.5"' : ''}>下一张 ▶</button>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    
+                    // 关闭按钮
+                    modal.querySelector('.preview-close').onclick = () => {
+                        modal.remove();
+                        openMailAfterSave();
+                    };
+                    
+                    // 上一张
+                    const prevBtn = modal.querySelector('#previewPrevBtn');
+                    if (prevBtn && currentPreviewIndex > 0) {
+                        prevBtn.onclick = () => {
+                            if (currentPreviewIndex > 0) {
+                                currentPreviewIndex--;
+                                modal.remove();
+                                showPreviewModal();
+                            }
+                        };
+                    }
+                    
+                    // 下一张
+                    const nextBtn = modal.querySelector('#previewNextBtn');
+                    if (nextBtn && currentPreviewIndex < previewImagesData.length - 1) {
+                        nextBtn.onclick = () => {
+                            if (currentPreviewIndex < previewImagesData.length - 1) {
+                                currentPreviewIndex++;
+                                modal.remove();
+                                showPreviewModal();
+                            }
+                        };
+                    }
+                    
+                    // 提示保存按钮
+                    const saveBtn = modal.querySelector('#previewSaveBtn');
+                    if (saveBtn) {
+                        saveBtn.onclick = () => {
+                            showToast('请长按图片选择"保存图片"', true);
+                        };
+                    }
+                    
+                    // 禁用图片拖拽，避免干扰长按菜单
+                    const img = modal.querySelector('.preview-image');
+                    img.ondragstart = (e) => e.preventDefault();
+                }
+                
+                function openMailAfterSave() {
+                    if (pendingEmail && previewImagesData.length > 0) {
+                        const subject = encodeURIComponent(`📸 来自智绘快传的图片分享 (${previewImagesData.length}张)`);
+                        const body = encodeURIComponent(
+                            `你好，\n\n分享给你 ${previewImagesData.length} 张图片，已保存到相册，请添加到邮件附件。\n\n—— 来自 FlowTransfer 智绘快传`
+                        );
+                        window.location.href = `mailto:${encodeURIComponent(pendingEmail)}?subject=${subject}&body=${body}`;
+                        showToast(`📧 已打开邮箱，请从相册添加附件`, true);
+                        pendingEmail = null;
+                    }
+                }
+                
+                function openShareModal() {
+                    if (images.length === 0) {
+                        showToast('没有图片可分享');
+                        return;
+                    }
+                    
+                    shareImageList.innerHTML = images.map((item, index) => `
+                        <div class="share-image-item" data-index="${index}">
+                            <div class="share-checkbox">✓</div>
+                            <div class="file-info">
+                                <div class="file-name">图片 ${index + 1}</div>
+                                <div class="file-size">已编辑 · 原图无损</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    const allItems = document.querySelectorAll('.share-image-item');
+                    allItems.forEach(el => {
+                        el.classList.add('selected');
+                        el.onclick = (e) => {
+                            e.stopPropagation();
+                            el.classList.toggle('selected');
+                        };
+                    });
+                    
+                    shareModal.classList.add('active');
+                }
+                
+                const confirmBtn = document.getElementById('confirmShareBtn');
+                const cancelBtn = document.getElementById('cancelShareBtn');
+                
+                confirmBtn.onclick = async () => {
+                    const selectedIndices = [];
+                    document.querySelectorAll('.share-image-item.selected').forEach(el => {
+                        selectedIndices.push(parseInt(el.dataset.index));
+                    });
+                    
+                    if (selectedIndices.length === 0) {
+                        showToast('请至少选择一张图片');
+                        return;
+                    }
+                    
+                    await shareImages(selectedIndices);
+                };
+                
+                cancelBtn.onclick = () => {
+                    shareModal.classList.remove('active');
+                };
+                
+                document.getElementById('cropToolBtn').onclick = () => setMode(currentMode === 'crop' ? null : 'crop');
+                document.getElementById('drawToolBtn').onclick = () => setMode(currentMode === 'draw' ? null : 'draw');
+                document.getElementById('eraserToolBtn').onclick = () => setMode(currentMode === 'eraser' ? null : 'eraser');
+                document.getElementById('textToolBtn').onclick = () => setMode(currentMode === 'text' ? null : 'text');
+                document.getElementById('undoBtn').onclick = () => undo();
+                document.getElementById('clearToolBtn').onclick = () => {
+                    if (confirm('清除所有涂鸦和文字？此操作可撤回')) {
+                        const img = new Image();
+                        img.onload = () => {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0);
+                            texts = [];
+                            saveNow();
+                            saveToHistory();
+                            showToast('已清空');
+                        };
+                        img.src = originalImageData;
+                    }
+                };
+                document.getElementById('cancelCropBtn').onclick = () => setMode(null);
+                
+                document.querySelectorAll('.color-dot').forEach(dot => {
+                    dot.onclick = () => {
+                        drawColor = dot.style.backgroundColor;
+                        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+                        dot.classList.add('selected');
+                    };
+                });
+                document.querySelector('.color-dot').classList.add('selected');
+                
+                document.getElementById('brushSize').oninput = (e) => {
+                    drawSize = parseInt(e.target.value);
+                    document.getElementById('sizeValue').innerText = drawSize + 'px';
+                };
+                document.getElementById('fontSize').oninput = (e) => {
+                    textSize = parseInt(e.target.value);
+                    document.getElementById('fontSizeValue').innerText = textSize + 'px';
+                };
+                
+                document.querySelectorAll('.ratio-btn[data-ratio]').forEach(btn => {
+                    btn.onclick = () => {
+                        cropRatio = btn.dataset.ratio;
+                        document.querySelectorAll('.ratio-btn[data-ratio]').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        showToast(`${cropRatio === 'free' ? '自由裁剪' : cropRatio} 模式`);
+                    };
+                });
+                document.querySelector('.ratio-btn[data-ratio="free"]').classList.add('active');
+                
+                prevImageBtn.onclick = () => {
+                    if (images.length > 1) {
+                        saveCurrentToCollection();
+                        let newIndex = currentImgIndex - 1;
+                        if (newIndex < 0) newIndex = images.length - 1;
+                        loadImage(newIndex);
+                    }
+                };
+                nextImageBtn.onclick = () => {
+                    if (images.length > 1) {
+                        saveCurrentToCollection();
+                        let newIndex = currentImgIndex + 1;
+                        if (newIndex >= images.length) newIndex = 0;
+                        loadImage(newIndex);
+                    }
+                };
+                
+                document.getElementById('backToReceive').onclick = () => showPage(pageReceive);
+                
+                const topMailBtn = document.getElementById('topMailBtn');
+                const editorMailBtn = document.getElementById('editorMailBtn');
+                topMailBtn.onclick = openShareModal;
+                editorMailBtn.onclick = openShareModal;
+                
+                window.addEventListener('resize', () => {
+                    if (currentImageData) {
+                        redraw();
+                    }
+                });
+                
+                canvas.addEventListener('dblclick', (e) => {
+                    const { x, y } = getCanvasCoords(e);
+                    for (let i = 0; i < texts.length; i++) {
+                        const t = texts[i];
+                        const textWidth = t.text.length * t.size * 0.6;
+                        const textHeight = t.size;
+                        const hitArea = Math.min(Math.max(t.size * 0.8, 20), 60);
+                        if (x >= t.x - textWidth/2 - hitArea/2 && x <= t.x + textWidth/2 + hitArea/2 &&
+                            y >= t.y - textHeight - hitArea/2 && y <= t.y + hitArea/2) {
+                            texts.splice(i, 1);
+                            redrawTextOnly();
+                            saveToHistory();
+                            showToast('文字已删除');
+                            break;
+                        }
+                    }
+                });
+                
+                function onPanStart(e) {
+                    if (currentMode === 'draw' || currentMode === 'eraser' || currentMode === 'crop') return;
+                    if (currentScale <= 1) return;
+                    if (textDragActive) return;
+                    isPanning = true;
+                    let clientX, clientY;
+                    if (e.touches) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+                    panStartX = clientX;
+                    panStartY = clientY;
+                    panStartTranslateX = translateX;
+                    panStartTranslateY = translateY;
+                    canvas.style.cursor = 'grabbing';
+                    e.preventDefault();
+                }
+                
+                function onPanMove(e) {
+                    if (!isPanning) return;
+                    let clientX, clientY;
+                    if (e.touches) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+                    const dx = clientX - panStartX;
+                    const dy = clientY - panStartY;
+                    translateX = panStartTranslateX + dx;
+                    translateY = panStartTranslateY + dy;
+                    updateTransform();
+                    e.preventDefault();
+                }
+                
+                function onPanEnd(e) {
+                    isPanning = false;
+                    canvas.style.cursor = 'grab';
+                }
+                
+                canvas.addEventListener('touchstart', onPanStart);
+                canvas.addEventListener('touchmove', onPanMove);
+                canvas.addEventListener('touchend', onPanEnd);
+                canvas.addEventListener('touchcancel', onPanEnd);
+                canvas.addEventListener('mousedown', onPanStart);
+                canvas.addEventListener('mousemove', onPanMove);
+                canvas.addEventListener('mouseup', onPanEnd);
+                
+                function handleStart(e) {
+                    if (isPinching) return;
+                    e.preventDefault();
+                    const { x, y } = getCanvasCoords(e);
+                    if (currentMode !== 'draw' && currentMode !== 'eraser' && currentMode !== 'crop') {
+                        const textIdx = isPointOnText(x, y);
+                        if (textIdx !== -1) {
+                            draggingTextIndex = textIdx;
+                            dragStartX = texts[textIdx].x - x;
+                            dragStartY = texts[textIdx].y - y;
+                            isDraggingText = true;
+                            textDragActive = true;
+                            canvas.style.cursor = 'grabbing';
+                            return;
+                        }
+                    }
+                    if (currentMode === 'draw') {
+                        isDrawing = true;
+                        lastX = x;
+                        lastY = y;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                    } else if (currentMode === 'eraser') {
+                        isDrawing = true;
+                        lastX = x;
+                        lastY = y;
+                        eraserAt(x, y, drawSize);
+                    } else if (currentMode === 'crop') {
+                        cropStart = { x, y };
+                        cropEnd = { x, y };
+                        isCropping = true;
+                    } else if (currentMode === 'text') {
+                        const newText = prompt('请输入文字:', '创意标注');
+                        if (newText && newText.trim()) {
+                            texts.push({
+                                text: newText,
+                                x: x,
+                                y: y,
+                                color: drawColor,
+                                size: textSize
+                            });
+                            redrawTextOnly();
+                            saveToHistory();
+                            showToast('文字已添加');
+                        }
+                    }
+                }
+                
+                function handleMove(e) {
+                    if (isPinching) return;
+                    e.preventDefault();
+                    const { x, y } = getCanvasCoords(e);
+                    if (isDraggingText && draggingTextIndex !== -1) {
+                        texts[draggingTextIndex].x = x + dragStartX;
+                        texts[draggingTextIndex].y = y + dragStartY;
+                        redrawTextOnly();
+                        return;
+                    }
+                    if (currentMode === 'draw' && isDrawing) {
+                        drawLine(lastX, lastY, x, y);
+                        lastX = x;
+                        lastY = y;
+                    } else if (currentMode === 'eraser' && isDrawing) {
+                        const distance = Math.hypot(x - lastX, y - lastY);
+                        const steps = Math.max(1, Math.ceil(distance / 4));
+                        for (let step = 1; step <= steps; step++) {
+                            const t = step / steps;
+                            const ix = lastX + (x - lastX) * t;
+                            const iy = lastY + (y - lastY) * t;
+                            eraserAt(ix, iy, drawSize);
+                        }
+                        lastX = x;
+                        lastY = y;
+                    } else if (currentMode === 'crop' && isCropping) {
+                        cropEnd = { x, y };
+                        redraw();
+                        const left = Math.min(cropStart.x, cropEnd.x);
+                        const top = Math.min(cropStart.y, cropEnd.y);
+                        const right = Math.max(cropStart.x, cropEnd.x);
+                        const bottom = Math.max(cropStart.y, cropEnd.y);
+                        ctx.save();
+                        ctx.globalAlpha = 0.4;
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.globalAlpha = 1;
+                        ctx.clearRect(left, top, right - left, bottom - top);
+                        ctx.strokeStyle = '#0A84FF';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.strokeRect(left, top, right - left, bottom - top);
+                        ctx.setLineDash([]);
+                        ctx.restore();
+                    }
+                }
+                
+                function handleEnd(e) {
+                    e.preventDefault();
+                    if ((currentMode === 'draw' || currentMode === 'eraser') && isDrawing) {
+                        saveNow();
+                        saveToHistory();
+                    }
+                    if (isDraggingText && draggingTextIndex !== -1) {
+                        saveToHistory();
+                        isDraggingText = false;
+                        draggingTextIndex = -1;
+                        textDragActive = false;
+                        canvas.style.cursor = 'grab';
+                    }
+                    if (currentMode === 'crop' && isCropping && cropStart.x !== cropEnd.x && cropStart.y !== cropEnd.y) {
+                        applyCrop();
+                        setMode(null);
+                    }
+                    isDrawing = false;
+                    isCropping = false;
+                }
+                
+                canvas.addEventListener('touchstart', handleStart, { passive: false });
+                canvas.addEventListener('touchmove', handleMove, { passive: false });
+                canvas.addEventListener('touchend', handleEnd);
+                canvas.addEventListener('touchcancel', handleEnd);
+                canvas.addEventListener('mousedown', handleStart);
+                canvas.addEventListener('mousemove', handleMove);
+                canvas.addEventListener('mouseup', handleEnd);
+                
+                updateBluetoothUI();
+                updateImageSwitcher();
+                updateContainerSize();
+            }
+        })();
+    </script>
+</body>
+</html>
