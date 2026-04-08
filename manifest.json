@@ -1,0 +1,13 @@
+{
+  "background_color": "#000000",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "智绘快传",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "智绘快传",
+  "start_url": "/",
+  "theme_color": "#0a84ff",
+  "description": "图片编辑与分享工具",
+  "id": "/"
+}
